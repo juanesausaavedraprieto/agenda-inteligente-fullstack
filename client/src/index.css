@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Un estilo oscuro base para no quedarnos ciegos */
+body {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}

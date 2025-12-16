@@ -1,0 +1,157 @@
+// server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. EL USUARIO (Centro del Universo)
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  // Relaciones (Todo lo que le pertenece)
+  tasks        Task[]
+  events       Event[]
+  pets         Pet[]
+  courses      Course[]
+  finances     Transaction[]
+  notes        Note[]
+  pushSub      Json?
+}
+
+// 2. AGENDA & TAREAS (Unificadas o separadas, aquí separadas por lógica)
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  isCompleted Boolean     @default(false)
+  dueDate     DateTime?
+  priority    Priority    @default(MEDIUM) // Baja, Media, Alta, Pánico
+  category    Category    @default(PERSONAL)
+  type        TaskType    @default(TASK)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  createdAt   DateTime    @default(now())
+  reminderSent Boolean    @default(false)
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  date        DateTime // Fecha y hora exacta
+  location    String?
+  category    Category @default(ACADEMIC)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// 3. ACADÉMICO (Modo Ingeniero)
+model Course {
+  id          String   @id @default(uuid())
+  name        String   // Ej: "Teoría de Sistemas"
+  credits     Int
+  cycle       Int      // Ej: 5to Ciclo
+  
+  // Notas del curso
+  grades      Grade[]
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Grade {
+  id        String   @id @default(uuid())
+  name      String   // Ej: "Parcial 1"
+  score     Float    // Ej: 18.5
+  weight    Float    // Peso en % (Ej: 0.30)
+  
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+// 4. MASCOTAS (La joya de la corona 🐾)
+model Pet {
+  id        String   @id @default(uuid())
+  name      String
+  species   String   // Perro, Gato, Capibara
+  breed     String?  // Raza
+  birthDate DateTime?
+  
+  // Historial Médico
+  vaccines  Vaccine[]
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Vaccine {
+  id          String   @id @default(uuid())
+  name        String   // Ej: "Quíntuple"
+  appliedDate DateTime // Cuándo se la puso
+  nextDate    DateTime // Cuándo toca la próxima (CLAVE para alertas)
+  
+  petId       String
+  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+}
+
+// 5. FINANZAS (Supervivencia)
+model Transaction {
+  id          String          @id @default(uuid())
+  amount      Float
+  type        TransactionType // INCOME (Ingreso) o EXPENSE (Gasto)
+  category    String          // Comida, Pasaje, Copias...
+  date        DateTime        @default(now())
+  description String?
+
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+}
+
+// 6. SEGUNDO CEREBRO (Notas)
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   // Puede guardar Markdown
+  tags      String[] // Array de etiquetas: ["idea", "proyecto"]
+  updatedAt DateTime @updatedAt
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// --- ENUMS (Para obligar orden) ---
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  PANIC // 😱
+}
+
+enum Category {
+  PERSONAL
+  WORK
+  ACADEMIC
+  HEALTH
+  PET
+  FINANCE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+enum TaskType {
+  EXAM
+  HOMEWORK
+  EVENT
+  TASK
+}
