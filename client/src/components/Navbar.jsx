@@ -5,7 +5,7 @@ function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
 
   return (
-    <nav className="bg-zinc-700 my-3 px-10 py-5 rounded-lg flex justify-between items-center">
+    <nav className="bg-zinc-700 my-3 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-10 rounded-lg gap-4">
 
       {/* 🔹 IZQUIERDA: Logo + Links */}
       <div className="flex items-center gap-x-6">
