@@ -18,7 +18,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173', 
-    'https://agenda-inteligente.vercel.app' // <--- Adivinando tu futura URL (o pon '*' por ahora para probar)
+    'https://agenda-inteligente-fullstack.vercel.app' // <--- Adivinando tu futura URL (o pon '*' por ahora para probar)
   ],
   credentials: true // <--- Permite el envío de cookies/tokens
 }));
