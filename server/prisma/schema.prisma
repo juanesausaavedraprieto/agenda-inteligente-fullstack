@@ -16,6 +16,9 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  dni       String?  @unique
+  sex       String?
+  birthDate DateTime?
 
   // Relaciones (Todo lo que le pertenece)
   tasks        Task[]
@@ -85,7 +88,7 @@ model Pet {
   species   String   // Perro, Gato, Capibara
   breed     String?  // Raza
   birthDate DateTime?
-  
+  createdAt DateTime @default(now())
   // Historial Médico
   vaccines  Vaccine[]
   

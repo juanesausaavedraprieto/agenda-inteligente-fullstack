@@ -1,15 +1,19 @@
-// server/src/routes/tasks.routes.js
-import { Router } from 'express';
-import { authRequired } from '../middlewares/auth.middleware.js';
-import { getTasks,getTask, createTask, deleteTask, updateTask } from '../controllers/tasks.controller.js';
+import { Router } from "express";
+import { authRequired } from "../middlewares/auth.middleware.js";
+import { getTasks, getTask, createTask, updateTask, deleteTask } from "../controllers/tasks.controller.js";
+
+// IMPORTAR VALIDATOR Y SCHEMA
+import { validateSchema } from "../middlewares/validator.middleware.js";
+import { createTaskSchema } from "../schemas/task.schema.js";
 
 const router = Router();
 
-// Todas estas rutas están protegidas por "authRequired"
-router.get('/', authRequired, getTasks);
-router.post('/', authRequired, createTask);
-router.delete('/:id', authRequired, deleteTask);
-router.get('/:id', authRequired, getTask); // Obtener una
-router.put('/:id', authRequired, updateTask); // Actualizar (PUT)
+router.get("/", authRequired, getTasks);
+router.get("/:id", authRequired, getTask);
+
+// VALIDAR AL CREAR Y AL ACTUALIZAR
+router.post("/", authRequired, validateSchema(createTaskSchema), createTask);
+router.delete("/:id", authRequired, deleteTask);
+router.put("/:id", authRequired, updateTask);
 
 export default router;

@@ -48,9 +48,28 @@ export function PetsProvider({ children }) {
           console.error(error);
       }
   }
+  // ... dentro de PetsProvider
 
+const updateVaccine = async (id, vaccine) => {
+    try {
+        const res = await axios.put(`/pets/vaccines/${id}`, vaccine);
+        // Actualizamos la lista local para ver el cambio al instante
+        const updatedPets = pets.map(pet => {
+            if (pet.id === vaccine.petId) {
+                return {
+                    ...pet,
+                    vaccines: pet.vaccines.map(v => v.id === id ? res.data : v)
+                };
+            }
+            return pet;
+        });
+        setPets(updatedPets);
+    } catch (error) {
+        console.error(error);
+    }
+};
   return (
-    <PetsContext.Provider value={{ pets, getPets, createPet, addVaccine, deletePet }}>
+    <PetsContext.Provider value={{ pets, getPets, createPet, addVaccine, deletePet, updateVaccine }}>
       {children}
     </PetsContext.Provider>
   );

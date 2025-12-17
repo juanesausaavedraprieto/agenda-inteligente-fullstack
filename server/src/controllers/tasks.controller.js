@@ -4,15 +4,35 @@ import prisma from '../lib/prisma.js';
 // 1. OBTENER TODAS LAS TAREAS (Solo del usuario logueado)
 export const getTasks = async (req, res) => {
   try {
+    // 1. LEER PARÁMETROS DE LA URL (ej: /tasks?page=1&limit=5)
+    // Si no envían nada, usamos valores por defecto (Página 1, 5 tareas)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip = (page - 1) * limit; // Fórmula mágica: (1-1)*5 = 0 (Empieza al inicio)
+
+    // 2. BUSCAR CON LÍMITES (Prisma)
     const tasks = await prisma.task.findMany({
-      where: {
-        userId: req.user.id, // <--- FILTRO CLAVE: Solo mis tareas
-      },
-      orderBy: {
-        dueDate: 'asc', // Ordenar por fecha de vencimiento (lo más urgente primero)
+      where: { userId: req.user.id },
+      skip: skip, // Saltar los anteriores
+      take: limit, // Tomar solo estos
+      orderBy: { dueDate: 'asc' } // Ordenar por fecha
+    });
+
+    // 3. CONTAR TOTAL (Para saber si hay página siguiente)
+    const totalTasks = await prisma.task.count({
+      where: { userId: req.user.id }
+    });
+
+    // 4. RESPONDER CON METADATOS
+    res.json({
+      data: tasks,
+      meta: {
+        total: totalTasks,
+        page: page,
+        last_page: Math.ceil(totalTasks / limit)
       }
     });
-    res.json(tasks);
+
   } catch (error) {
     res.status(500).json({ message: "Error al obtener tareas" });
   }
@@ -31,10 +51,10 @@ export const createTask = async (req, res) => {
         dueDate: new Date(dueDate),
         priority: priority || "MEDIUM",
         category: category || "PERSONAL",
-        
+
         // 2. Y AGREGA ESTA LÍNEA PARA GUARDARLO EN LA DB vvv
-        type: type || "TASK", 
-        
+        type: type || "TASK",
+
         userId: req.user.id,
       },
     });

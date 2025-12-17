@@ -1,123 +1,102 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Componentes auxiliares para enlaces
+  const AuthLinks = () => (
+    <>
+      <Link to="/dashboard" className="nav-link">Inicio</Link>
+      <Link to="/tasks" className="nav-link">Tareas</Link>
+      <Link to="/calendar" className="nav-link">Calendario</Link>
+      <Link to="/pets" className="nav-link">Mascotas</Link>
+      <Link to="/finance" className="nav-link">Finanzas</Link>
+      <Link to="/academic" className="nav-link">Académico</Link>
+      <Link to="/notes" className="nav-link">Notas</Link>
+    </>
+  );
+
+  const GuestLinks = () => (
+    <>
+      <Link to="/login" className="btn-indigo">Login</Link>
+      <Link to="/register" className="btn-indigo">Registro</Link>
+    </>
+  );
 
   return (
-    <nav className="bg-zinc-700 my-3 flex flex-col md:flex-row justify-between items-center py-4 px-6 md:px-10 rounded-lg gap-4">
+    <nav className="bg-zinc-700 my-3 rounded-lg px-4 py-4 md:px-10">
+      {/* CONTENEDOR PRINCIPAL */}
+      <div className="flex items-center justify-between">
 
-      {/* 🔹 IZQUIERDA: Logo + Links */}
-      <div className="flex items-center gap-x-6">
-        {/* Logo */}
+        {/* LOGO */}
         <Link to={isAuthenticated ? "/dashboard" : "/"}>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-x-2">
-            Agenda Inteligente <span>🧠</span>
+          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+            Agenda Inteligente 🧠
           </h1>
         </Link>
 
-        {/* Links principales */}
+        {/* BOTÓN HAMBURGUESA (solo móvil) */}
+        <button
+          className="md:hidden text-white text-2xl"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Menú"
+          aria-expanded={menuOpen}
+        >
+          ☰
+        </button>
+
+        {/* LINKS DESKTOP */}
+        <ul className="hidden md:flex gap-6 items-center">
+          {isAuthenticated ? <AuthLinks /> : <GuestLinks />}
+        </ul>
+
+        {/* USUARIO + BOTONES DESKTOP */}
+        {/* USUARIO + BOTONES DESKTOP */}
         {isAuthenticated && (
-          <ul className="flex gap-x-4">
-            <li>
-              <Link
-                to="/dashboard"
-                className="text-gray-300 hover:text-white transition"
-              >
-                Inicio
-              </Link>
-            </li>
+          <div className="hidden md:flex items-center gap-4">
+            <span className="text-sky-400 font-semibold">
+              Hola, {user?.name || "Usuario"}
+            </span>
 
-            <li>
-              <Link
-                to="/tasks"
-                className="text-gray-300 hover:text-white transition"
-              >
-                Tareas
-              </Link>
-            </li>
+            <Link to="/add-task" className="btn-indigo">
+              Añadir Tarea
+            </Link>
 
-            <li>
-              <Link
-                to="/pets"
-                className="text-gray-300 hover:text-white transition"
-              >
-                Mascotas
-              </Link>
-            </li>
-
-            {/* 👇 NUEVO LINK */}
-            <li>
-              <Link
-                to="/finance"
-                className="text-gray-300 hover:text-white transition"
-              >
-                Finanzas
-              </Link>
-            </li>
-            <li><Link
-              to="/academic"
-              className="text-gray-300 hover:text-white transition"
-            >
-              Académico
-            </Link></li>
-            <li><Link to="/notes"
-              className="text-gray-300 hover:text-white transition"
-            >Notas
-            </Link></li>
-          </ul>
+            <button onClick={logout} className="btn-red">
+              Salir
+            </button>
+          </div>
         )}
+
       </div>
 
-      {/* 🔹 DERECHA: Usuario */}
-      <ul className="flex gap-x-3 items-center">
-        {isAuthenticated ? (
-          <>
-            <li className="text-sky-400 font-semibold">
-              Hola, {user.name}
-            </li>
+      {/* MENÚ MÓVIL */}
+      {menuOpen && (
+        <div className="md:hidden mt-4 flex flex-col gap-4 text-center">
+          {isAuthenticated ? (
+            <>
+              <AuthLinks />
 
-            <li>
-              <Link
-                to="/add-task"
-                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded-sm transition"
-              >
+              <span className="text-sky-400 font-semibold">
+                Hola, {user?.name || "Usuario"}
+              </span>
+
+              <Link to="/add-task" className="btn-indigo">
                 Añadir Tarea
               </Link>
-            </li>
 
-            <li>
-              <Link
-                to="/"
-                onClick={logout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-sm transition"
-              >
+              <button onClick={logout} className="btn-red">
                 Salir
-              </Link>
-            </li>
-          </>
-        ) : (
-          <>
-            <li>
-              <Link
-                to="/login"
-                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded-sm transition"
-              >
-                Login
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                to="/register"
-                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded-sm transition"
-              >
-                Registro
-              </Link>
-            </li>
-          </>
-        )}
-      </ul>
+              </button>
+            </>
+          ) : (
+            <GuestLinks />
+          )}
+        </div>
+      )}
     </nav>
   );
 }

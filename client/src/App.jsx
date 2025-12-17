@@ -17,9 +17,10 @@ import PetsPage from "./pages/PetsPage";
 import FinancePage from "./pages/FinancePage"; 
 import AcademicPage from "./pages/AcademicPage"
 import NotesPage from "./pages/NotesPage";
+import CalendarPage from "./pages/CalendarPage";
 // Components
 import Navbar from "./components/Navbar";
-
+import { Toaster } from 'sonner';
 function App() {
   return (
     <AuthProvider>
@@ -48,8 +49,10 @@ function App() {
                     <Route path="/finance" element={<FinancePage />} /> {/* 👈 NUEVO */}
                     <Route path="/academic" element={<AcademicPage />} />.
                     <Route path="/notes" element={<NotesPage />} />.
+                    <Route path="/calendar" element={<CalendarPage />} />
                   </Route>
                 </Routes>
+                <Toaster richColors position="top-center" />
               </main>
             </BrowserRouter>
             </NotesProvider>

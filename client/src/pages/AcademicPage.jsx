@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useAcademic } from "../context/AcademicContext";
+import { generateAcademicReport } from "../utils/reports";
+import { useAuth } from "../context/AuthContext";
 import { useForm } from "react-hook-form";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 
 function AcademicPage() {
+    const { user } = useAuth(); // 👈 USUARIO
+
     const {
         courses,
         getCourses,
@@ -18,7 +22,6 @@ function AcademicPage() {
 
     const { register, handleSubmit, reset, setValue } = useForm();
 
-    // Estados
     const [showCourseForm, setShowCourseForm] = useState(false);
     const [selectedCourseForGrade, setSelectedCourseForGrade] = useState(null);
     const [editingId, setEditingId] = useState(null);
@@ -58,7 +61,6 @@ function AcademicPage() {
     const handleEditGrade = (grade, courseId) => {
         setSelectedCourseForGrade(courseId);
         setEditingGrade(grade);
-
         setValue("gradeName", grade.name);
         setValue("gradeScore", grade.score);
         setValue("gradeWeight", grade.weight);
@@ -94,16 +96,30 @@ function AcademicPage() {
             {/* HEADER */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Mis Cursos 📚</h1>
-                <button
-                    onClick={() => {
-                        setShowCourseForm(!showCourseForm);
-                        setEditingId(null);
-                        reset();
-                    }}
-                    className="bg-indigo-600 px-4 py-2 rounded-md hover:bg-indigo-700"
-                >
-                    {showCourseForm ? "Cancelar" : "Nuevo Curso"}
-                </button>
+
+                {/* BOTONES */}
+                <div className="flex gap-2">
+                    {/* BOTÓN PDF */}
+                    <button
+                        onClick={() => generateAcademicReport(courses, user?.name || "Estudiante")}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2 font-bold"
+                        title="Descargar Reporte Académico"
+                    >
+                        📄 PDF
+                    </button>
+
+                    {/* NUEVO CURSO */}
+                    <button
+                        onClick={() => {
+                            setShowCourseForm(!showCourseForm);
+                            setEditingId(null);
+                            reset();
+                        }}
+                        className="bg-indigo-600 px-4 py-2 rounded-md hover:bg-indigo-700 text-white font-bold"
+                    >
+                        {showCourseForm ? "Cancelar" : "Nuevo Curso"}
+                    </button>
+                </div>
             </div>
 
             {/* FORMULARIO CURSO */}
@@ -113,13 +129,29 @@ function AcademicPage() {
                         <h2 className="text-xl font-bold mb-4">
                             {editingId ? "Editar Curso" : "Registrar Curso"}
                         </h2>
+
                         <form onSubmit={onSubmitCourse}>
-                            <Input placeholder="Nombre" {...register("name", { required: true })} />
-                            <div className="flex gap-2">
-                                <Input type="number" placeholder="Ciclo" {...register("cycle", { required: true })} />
-                                <Input type="number" placeholder="Créditos" {...register("credits", { required: true })} />
+                            <Input
+                                placeholder="Nombre del curso"
+                                {...register("name", { required: true })}
+                            />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Ciclo"
+                                    {...register("cycle", { required: true })}
+                                />
+                                <Input
+                                    type="number"
+                                    placeholder="Créditos"
+                                    {...register("credits", { required: true })}
+                                />
                             </div>
-                            <Button>{editingId ? "Actualizar" : "Guardar"}</Button>
+
+                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 mt-4">
+                                {editingId ? "Actualizar" : "Guardar"}
+                            </Button>
                         </form>
                     </Card>
                 </div>
@@ -128,22 +160,20 @@ function AcademicPage() {
             {/* GRID DE CURSOS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map(course => (
-                    <div key={course.id} className="bg-zinc-800 p-6 rounded-lg relative border border-zinc-700">
-                        
-                        {/* BOTONES CURSO */}
+                    <div
+                        key={course.id}
+                        className="bg-zinc-800 p-6 rounded-lg relative border border-zinc-700"
+                    >
                         <div className="absolute top-3 right-3 flex gap-2">
                             <button
                                 onClick={() => handleEdit(course)}
-                                title="Editar curso"
-                                className="bg-zinc-700 hover:bg-indigo-600 text-white w-8 h-8 flex items-center justify-center rounded-full transition"
+                                className="bg-zinc-700 hover:bg-indigo-600 text-white w-8 h-8 rounded-full"
                             >
                                 ✏️
                             </button>
-
                             <button
                                 onClick={() => deleteCourse(course.id)}
-                                title="Eliminar curso"
-                                className="bg-zinc-700 hover:bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-full transition"
+                                className="bg-zinc-700 hover:bg-red-600 text-white w-8 h-8 rounded-full"
                             >
                                 ✕
                             </button>
@@ -154,7 +184,6 @@ function AcademicPage() {
                             Ciclo {course.cycle} • {course.credits} Créditos
                         </p>
 
-                        {/* PROMEDIO */}
                         <div className="flex justify-between items-end mb-2">
                             <span className="text-sm text-gray-400">Promedio:</span>
                             <span className={`text-4xl font-bold ${getScoreColor(course.average)}`}>
@@ -162,7 +191,6 @@ function AcademicPage() {
                             </span>
                         </div>
 
-                        {/* LISTA DE NOTAS (MEJORADA) */}
                         <div className="bg-zinc-900/50 p-3 rounded-md mb-4 text-sm max-h-32 overflow-y-auto">
                             {course.grades.length === 0 ? (
                                 <p className="text-gray-600 text-center">Sin notas</p>
@@ -172,27 +200,23 @@ function AcademicPage() {
                                         key={g.id}
                                         className="flex justify-between items-center border-b border-zinc-700 py-1 group"
                                     >
-                                        <div className="flex-1">
-                                            <span>{g.name} ({g.weight}%)</span>
+                                        <span>{g.name} ({g.weight}%)</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`font-bold ${getScoreColor(g.score)}`}>
+                                                {g.score}
+                                            </span>
+                                            <button
+                                                onClick={() => handleEditGrade(g, course.id)}
+                                                className="text-gray-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100"
+                                            >
+                                                ✏️
+                                            </button>
                                         </div>
-
-                                        <span className={`font-bold mr-3 ${getScoreColor(g.score)}`}>
-                                            {g.score}
-                                        </span>
-
-                                        <button
-                                            onClick={() => handleEditGrade(g, course.id)}
-                                            className="text-gray-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Editar Nota"
-                                        >
-                                            ✏️
-                                        </button>
                                     </div>
                                 ))
                             )}
                         </div>
 
-                        {/* AGREGAR NOTA */}
                         <button
                             onClick={() => {
                                 setSelectedCourseForGrade(course.id);
@@ -209,7 +233,7 @@ function AcademicPage() {
                 ))}
             </div>
 
-            {/* MODAL NOTA (ACTUALIZADO) */}
+            {/* MODAL NOTA */}
             {selectedCourseForGrade && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                     <div className="bg-zinc-800 p-8 rounded-lg max-w-sm w-full">
@@ -242,7 +266,9 @@ function AcademicPage() {
                             </div>
 
                             <div className="flex gap-2 mt-4">
-                                <Button>{editingGrade ? "Actualizar" : "Guardar"}</Button>
+                                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2">
+                                    {editingGrade ? "Actualizar" : "Guardar"}
+                                </Button>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedCourseForGrade(null)}

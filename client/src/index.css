@@ -7,3 +7,14 @@ body {
   background-color: #1a1a1a;
   color: #ffffff;
 }
+.nav-link {
+  @apply text-gray-300 hover:text-white transition;
+}
+
+.btn-indigo {
+  @apply bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded transition;
+}
+
+.btn-red {
+  @apply bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded transition;
+}
