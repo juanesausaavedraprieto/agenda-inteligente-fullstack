@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { toast } from "sonner"; // <-- Usamos Sonner para consistencia
+import { toast } from "sonner"; 
 
 function TaskFormPage() {
   const { register, handleSubmit, setValue } = useForm();
@@ -16,8 +16,6 @@ function TaskFormPage() {
   useEffect(() => {
     async function loadTask() {
       if (params.id) {
-        // Podríamos poner un toast de carga aquí si la BD es lenta, 
-        // pero para editar suele ser rápido.
         const task = await getTask(params.id);
         setValue("title", task.title);
         setValue("description", task.description);
@@ -25,6 +23,7 @@ function TaskFormPage() {
         setValue("category", task.category);
         setValue("type", task.type);
         if (task.dueDate) {
+          // Formateamos para que el input datetime-local lo lea (YYYY-MM-DDTHH:MM)
           setValue(
             "dueDate",
             new Date(task.dueDate).toISOString().slice(0, 16)
@@ -36,13 +35,26 @@ function TaskFormPage() {
   }, [params.id, setValue, getTask]);
 
   const onSubmit = handleSubmit(async (data) => {
+    
+    // ==========================================
+    // 🛡️ VALIDACIÓN DE FECHAS (NO PASADO)
+    // ==========================================
+    const selectedDate = new Date(data.dueDate);
+    const now = new Date();
+
+    // Comparamos milisegundos. Si la fecha seleccionada es menor a "ahora mismo".
+    if (selectedDate < now) {
+       toast.error("⚠️ ¡Viajar en el tiempo no es posible! La fecha debe ser hoy o en el futuro.");
+       return; // ⛔ ESTO DETIENE EL GUARDADO
+    }
+
+    // Preparar datos para el backend
     const dataValid = {
       ...data,
       dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
     };
 
     try {
-      // Usamos una promesa o lógica simple. Aquí mantenemos tu lógica simple:
       if (params.id) {
         await updateTask(params.id, dataValid);
         toast.success("Tarea actualizada correctamente ✏️");
@@ -54,7 +66,6 @@ function TaskFormPage() {
       navigate("/tasks");
     } catch (error) {
       console.error(error);
-      // Mostramos el error específico si existe, o uno genérico
       toast.error("Error al guardar la tarea ❌");
     }
   });
@@ -150,11 +161,6 @@ function TaskFormPage() {
           </Button>
         </form>
       </Card>
-      {/* NOTA IMPORTANTE: 
-         He eliminado <Toaster /> de aquí.
-         Asegúrate de tener <Toaster /> en tu archivo App.jsx o main.jsx
-         para que las notificaciones se vean en toda la aplicación.
-      */}
     </div>
   );
 }

@@ -28,6 +28,7 @@ model User {
   finances     Transaction[]
   notes        Note[]
   pushSub      Json?
+  healthProfile HealthProfile?
 }
 
 // 2. AGENDA & TAREAS (Unificadas o separadas, aquí separadas por lógica)
@@ -89,6 +90,7 @@ model Pet {
   breed     String?  // Raza
   birthDate DateTime?
   createdAt DateTime @default(now())
+  
   // Historial Médico
   vaccines  Vaccine[]
   
@@ -131,6 +133,27 @@ model Note {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model HealthProfile {
+  id        String   @id @default(uuid())
+  weight    Float    // Peso en kg
+  height    Float    // Altura en cm
+  bloodType String?  // Tipo de sangre
+  
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+
+  diseases  Disease[] // Relación con enfermedades (1 a muchos)
+}
+
+model Disease {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  diagnosedDate DateTime?
+  
+  healthProfileId String
+  healthProfile   HealthProfile @relation(fields: [healthProfileId], references: [id])
+}
 // --- ENUMS (Para obligar orden) ---
 enum Priority {
   LOW

@@ -21,7 +21,7 @@ function TaskCard({ task }) {
     EVENT: "bg-green-500",
     TASK: "bg-gray-500",
   };
-
+  const isOverdue = new Date(task.dueDate) < new Date().setHours(0, 0, 0, 0);
   const handleDelete = (id) => {
     // CAMBIO IMPORTANTE: Usamos toast.custom en lugar de toast
     toast.custom(
@@ -71,9 +71,8 @@ function TaskCard({ task }) {
 
         <div className="flex flex-wrap gap-2">
           <span
-            className={`text-xs font-bold px-2 py-1 rounded text-white ${
-              typeColors[task.type] || "bg-gray-500"
-            }`}
+            className={`text-xs font-bold px-2 py-1 rounded text-white ${typeColors[task.type] || "bg-gray-500"
+              }`}
           >
             {task.type}
           </span>
@@ -104,8 +103,9 @@ function TaskCard({ task }) {
       )}
 
       {/* FECHA */}
-      <p className="text-slate-400 text-xs mt-4 pt-2 border-t border-zinc-700">
-        📅 Vence: <span className="text-slate-200">{formatDate(task.dueDate)}</span>
+      <p className={`text-xs mt-4 pt-2 border-t border-zinc-700 flex justify-between items-center ${isOverdue ? "text-red-400 font-bold" : "text-slate-400"}`}>
+        <span>📅 Vence: {formatDate(task.dueDate)}</span>
+        {isOverdue && <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px] border border-red-500/50">VENCIDA</span>}
       </p>
     </div>
   );

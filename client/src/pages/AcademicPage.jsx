@@ -6,9 +6,10 @@ import { useForm } from "react-hook-form";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { toast } from "sonner";
 
 function AcademicPage() {
-    const { user } = useAuth(); // 👈 USUARIO
+    const { user } = useAuth();
 
     const {
         courses,
@@ -44,14 +45,21 @@ function AcademicPage() {
     };
 
     const onSubmitCourse = handleSubmit(async (data) => {
-        if (editingId) {
-            await updateCourse(editingId, data);
-            setEditingId(null);
-        } else {
-            await createCourse(data);
+        try {
+            if (editingId) {
+                await updateCourse(editingId, data);
+                toast.success("Curso actualizado correctamente");
+                setEditingId(null);
+            } else {
+                await createCourse(data);
+                toast.success("Curso registrado correctamente");
+            }
+            setShowCourseForm(false);
+            reset();
+        } catch (error) {
+            toast.error("Error al guardar el curso");
+            console.error(error);
         }
-        setShowCourseForm(false);
-        reset();
     });
 
     /* =========================
@@ -67,22 +75,64 @@ function AcademicPage() {
     };
 
     const handleGradeSubmit = handleSubmit(async (data) => {
+        const score = parseFloat(data.gradeScore);
+        const weight = parseFloat(data.gradeWeight);
+
+        // ⛔ BLOQUEO DE NEGATIVOS
+        if (score < 0 || weight < 0) {
+            toast.error("No se permiten valores negativos");
+            return;
+        }
+
+        // ⛔ RANGOS VÁLIDOS
+        if (score > 20) {
+            toast.error("La nota no puede ser mayor a 20");
+            return;
+        }
+
+        if (weight > 100) {
+            toast.error("El peso no puede ser mayor a 100%");
+            return;
+        }
+
+        const currentCourse = courses.find(c => c.id === selectedCourseForGrade);
+        if (!currentCourse) return;
+
+        const currentTotalWeight = currentCourse.grades.reduce((acc, grade) => {
+            if (editingGrade && grade.id === editingGrade.id) return acc;
+            return acc + parseFloat(grade.weight);
+        }, 0);
+
+        const projectedTotal = currentTotalWeight + weight;
+
+        if (projectedTotal > 100) {
+            const available = 100 - currentTotalWeight;
+            toast.error(`El peso total no puede superar 100%. Disponible: ${available}%`);
+            return;
+        }
+
         const gradeData = {
             name: data.gradeName,
-            score: data.gradeScore,
-            weight: data.gradeWeight,
+            score,
+            weight,
             courseId: selectedCourseForGrade
         };
 
-        if (editingGrade) {
-            await updateGrade(editingGrade.id, gradeData);
-        } else {
-            await addGrade(gradeData);
+        try {
+            if (editingGrade) {
+                await updateGrade(editingGrade.id, gradeData);
+                toast.success("Nota actualizada");
+            } else {
+                await addGrade(gradeData);
+                toast.success("Nota agregada");
+            }
+            setSelectedCourseForGrade(null);
+            setEditingGrade(null);
+            reset();
+        } catch (error) {
+            toast.error("Error al guardar la nota");
+            console.error(error);
         }
-
-        setSelectedCourseForGrade(null);
-        setEditingGrade(null);
-        reset();
     });
 
     const getScoreColor = (score) => {
@@ -97,18 +147,16 @@ function AcademicPage() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Mis Cursos 📚</h1>
 
-                {/* BOTONES */}
                 <div className="flex gap-2">
-                    {/* BOTÓN PDF */}
                     <button
-                        onClick={() => generateAcademicReport(courses, user?.name || "Estudiante")}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md flex items-center gap-2 font-bold"
-                        title="Descargar Reporte Académico"
+                        onClick={() =>
+                            generateAcademicReport(courses, user?.name || "Estudiante")
+                        }
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-bold"
                     >
                         📄 PDF
                     </button>
 
-                    {/* NUEVO CURSO */}
                     <button
                         onClick={() => {
                             setShowCourseForm(!showCourseForm);
@@ -139,13 +187,15 @@ function AcademicPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 <Input
                                     type="number"
+                                    min="1"
                                     placeholder="Ciclo"
-                                    {...register("cycle", { required: true })}
+                                    {...register("cycle", { required: true, min: 1 })}
                                 />
                                 <Input
                                     type="number"
+                                    min="1"
                                     placeholder="Créditos"
-                                    {...register("credits", { required: true })}
+                                    {...register("credits", { required: true, min: 1 })}
                                 />
                             </div>
 
@@ -167,13 +217,16 @@ function AcademicPage() {
                         <div className="absolute top-3 right-3 flex gap-2">
                             <button
                                 onClick={() => handleEdit(course)}
-                                className="bg-zinc-700 hover:bg-indigo-600 text-white w-8 h-8 rounded-full"
+                                className="bg-zinc-700 hover:bg-indigo-600 w-8 h-8 rounded-full"
                             >
                                 ✏️
                             </button>
                             <button
-                                onClick={() => deleteCourse(course.id)}
-                                className="bg-zinc-700 hover:bg-red-600 text-white w-8 h-8 rounded-full"
+                                onClick={() => {
+                                    deleteCourse(course.id);
+                                    toast.success("Curso eliminado");
+                                }}
+                                className="bg-zinc-700 hover:bg-red-600 w-8 h-8 rounded-full"
                             >
                                 ✕
                             </button>
@@ -225,7 +278,7 @@ function AcademicPage() {
                                 setValue("gradeScore", "");
                                 setValue("gradeWeight", "");
                             }}
-                            className="w-full bg-zinc-700 hover:bg-zinc-600 py-2 rounded text-sm text-gray-300"
+                            className="w-full bg-zinc-700 hover:bg-zinc-600 py-2 rounded text-sm"
                         >
                             + Agregar Nota
                         </button>
@@ -244,7 +297,7 @@ function AcademicPage() {
                         <form onSubmit={handleGradeSubmit}>
                             <input
                                 placeholder="Ej: Parcial 1"
-                                className="w-full bg-zinc-700 text-white px-4 py-2 rounded mb-2"
+                                className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
                                 {...register("gradeName", { required: true })}
                             />
 
@@ -252,16 +305,27 @@ function AcademicPage() {
                                 <input
                                     type="number"
                                     step="0.1"
+                                    min="0"
                                     max="20"
                                     placeholder="Nota"
-                                    className="w-full bg-zinc-700 text-white px-4 py-2 rounded mb-2"
-                                    {...register("gradeScore", { required: true })}
+                                    className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
+                                    {...register("gradeScore", {
+                                        required: true,
+                                        min: 0,
+                                        max: 20
+                                    })}
                                 />
                                 <input
                                     type="number"
+                                    min="0"
+                                    max="100"
                                     placeholder="Peso %"
-                                    className="w-full bg-zinc-700 text-white px-4 py-2 rounded mb-2"
-                                    {...register("gradeWeight", { required: true })}
+                                    className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
+                                    {...register("gradeWeight", {
+                                        required: true,
+                                        min: 0,
+                                        max: 100
+                                    })}
                                 />
                             </div>
 
@@ -272,7 +336,7 @@ function AcademicPage() {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedCourseForGrade(null)}
-                                    className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                                    className="w-full bg-red-500 px-4 py-2 rounded hover:bg-red-600"
                                 >
                                     Cancelar
                                 </button>

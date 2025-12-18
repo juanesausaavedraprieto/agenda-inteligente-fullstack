@@ -15,6 +15,7 @@ import transactionRoutes from './routes/transactions.routes.js';
 import coursesRoutes from './routes/courses.routes.js';
 import notesRoutes from './routes/notes.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import healthRoutes from './routes/health.routes.js';
 dotenv.config();
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/finance', transactionRoutes);
 app.use('/api/academic', coursesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/health', healthRoutes);
 app.get('/', (req, res) => {
   res.json({ message: '🚀 API de Agenda Inteligente funcionando' });
 });

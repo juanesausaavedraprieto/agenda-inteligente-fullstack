@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import axios from "../api/axios";
+import axios from "../api/axios"; // Tu instancia de axios
 
 const FinanceContext = createContext();
 
@@ -22,25 +22,38 @@ export function FinanceProvider({ children }) {
   };
 
   const createTransaction = async (transaction) => {
-    try {
-      const res = await axios.post("/finance", transaction);
-      setTransactions([res.data, ...transactions]); // Agregamos al inicio
-    } catch (error) {
-      console.error(error);
-    }
+    const res = await axios.post("/finance", transaction);
+    setTransactions([...transactions, res.data]);
   };
 
   const deleteTransaction = async (id) => {
-    try {
-      await axios.delete(`/finance/${id}`);
-      setTransactions(transactions.filter(t => t.id !== id));
-    } catch (error) {
-      console.error(error);
-    }
+    await axios.delete(`/finance/${id}`);
+    setTransactions(transactions.filter((t) => t.id !== id));
   };
 
+  // --- 👇 ESTA ES LA FUNCIÓN QUE TE FALTA ---
+  const updateTransaction = async (id, transaction) => {
+    try {
+      const res = await axios.put(`/finance/${id}`, transaction);
+      // Actualizamos el estado local buscando por ID y reemplazando
+      setTransactions(transactions.map((t) => (t.id === id ? res.data : t)));
+    } catch (error) {
+      console.error(error);
+      throw error; // Lanzamos el error para que la página muestre el Toast rojo
+    }
+  };
+  // ------------------------------------------
+
   return (
-    <FinanceContext.Provider value={{ transactions, getTransactions, createTransaction, deleteTransaction }}>
+    <FinanceContext.Provider
+      value={{
+        transactions,
+        getTransactions,
+        createTransaction,
+        deleteTransaction,
+        updateTransaction, // 👈 IMPORTANTE: AGREGARLA AQUÍ
+      }}
+    >
       {children}
     </FinanceContext.Provider>
   );

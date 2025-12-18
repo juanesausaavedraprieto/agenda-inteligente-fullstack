@@ -50,3 +50,32 @@ export const deleteTransaction = async (req, res) => {
     res.status(500).json({ message: "Error al eliminar" });
   }
 };
+export const updateTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, amount, date, type, category } = req.body;
+
+    // Verificar que la transacción exista y sea del usuario
+    const transaction = await prisma.transaction.findFirst({
+        where: { id: id, userId: req.user.id }
+    });
+
+    if (!transaction) return res.status(404).json({ message: "Movimiento no encontrado" });
+
+    const updatedTransaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        description,
+        amount: parseFloat(amount), // Asegurar que sea número
+        date: new Date(date),       // Asegurar formato fecha
+        type,
+        category
+      },
+    });
+
+    res.json(updatedTransaction);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al actualizar movimiento" });
+  }
+};
