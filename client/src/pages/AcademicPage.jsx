@@ -10,17 +10,7 @@ import { toast } from "sonner";
 
 function AcademicPage() {
     const { user } = useAuth();
-
-    const {
-        courses,
-        getCourses,
-        createCourse,
-        addGrade,
-        deleteCourse,
-        updateCourse,
-        updateGrade
-    } = useAcademic();
-
+    const { courses, getCourses, createCourse, addGrade, deleteCourse, updateCourse, updateGrade } = useAcademic();
     const { register, handleSubmit, reset, setValue } = useForm();
 
     const [showCourseForm, setShowCourseForm] = useState(false);
@@ -31,10 +21,6 @@ function AcademicPage() {
     useEffect(() => {
         getCourses();
     }, []);
-
-    /* =========================
-       CURSOS
-    ========================= */
 
     const handleEdit = (course) => {
         setEditingId(course.id);
@@ -58,13 +44,8 @@ function AcademicPage() {
             reset();
         } catch (error) {
             toast.error("Error al guardar el curso");
-            console.error(error);
         }
     });
-
-    /* =========================
-       NOTAS
-    ========================= */
 
     const handleEditGrade = (grade, courseId) => {
         setSelectedCourseForGrade(courseId);
@@ -78,18 +59,14 @@ function AcademicPage() {
         const score = parseFloat(data.gradeScore);
         const weight = parseFloat(data.gradeWeight);
 
-        // ⛔ BLOQUEO DE NEGATIVOS
         if (score < 0 || weight < 0) {
             toast.error("No se permiten valores negativos");
             return;
         }
-
-        // ⛔ RANGOS VÁLIDOS
         if (score > 20) {
             toast.error("La nota no puede ser mayor a 20");
             return;
         }
-
         if (weight > 100) {
             toast.error("El peso no puede ser mayor a 100%");
             return;
@@ -131,28 +108,25 @@ function AcademicPage() {
             reset();
         } catch (error) {
             toast.error("Error al guardar la nota");
-            console.error(error);
         }
     });
 
     const getScoreColor = (score) => {
-        if (score >= 14) return "text-green-400";
-        if (score >= 10.5) return "text-yellow-400";
-        return "text-red-500";
+        if (score >= 14) return "text-green-600 dark:text-green-400";
+        if (score >= 10.5) return "text-yellow-600 dark:text-yellow-400";
+        return "text-red-600 dark:text-red-500";
     };
 
     return (
         <div className="p-4 md:p-10">
             {/* HEADER */}
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Mis Cursos 📚</h1>
+                <h1 className="text-3xl font-bold text-zinc-800 dark:text-white">Mis Cursos 📚</h1>
 
                 <div className="flex gap-2">
                     <button
-                        onClick={() =>
-                            generateAcademicReport(courses, user?.name || "Estudiante")
-                        }
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-bold"
+                        onClick={() => generateAcademicReport(courses, user?.name || "Estudiante")}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-bold shadow-md"
                     >
                         📄 PDF
                     </button>
@@ -163,7 +137,7 @@ function AcademicPage() {
                             setEditingId(null);
                             reset();
                         }}
-                        className="bg-indigo-600 px-4 py-2 rounded-md hover:bg-indigo-700 text-white font-bold"
+                        className="bg-indigo-600 px-4 py-2 rounded-md hover:bg-indigo-700 text-white font-bold shadow-md"
                     >
                         {showCourseForm ? "Cancelar" : "Nuevo Curso"}
                     </button>
@@ -173,8 +147,8 @@ function AcademicPage() {
             {/* FORMULARIO CURSO */}
             {showCourseForm && (
                 <div className="flex justify-center mb-8">
-                    <Card>
-                        <h2 className="text-xl font-bold mb-4">
+                    <Card className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl w-full max-w-md">
+                        <h2 className="text-xl font-bold mb-4 text-zinc-800 dark:text-white">
                             {editingId ? "Editar Curso" : "Registrar Curso"}
                         </h2>
 
@@ -182,6 +156,7 @@ function AcademicPage() {
                             <Input
                                 placeholder="Nombre del curso"
                                 {...register("name", { required: true })}
+                                className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600 mb-2"
                             />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -190,12 +165,14 @@ function AcademicPage() {
                                     min="1"
                                     placeholder="Ciclo"
                                     {...register("cycle", { required: true, min: 1 })}
+                                    className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600"
                                 />
                                 <Input
                                     type="number"
                                     min="1"
                                     placeholder="Créditos"
                                     {...register("credits", { required: true, min: 1 })}
+                                    className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600"
                                 />
                             </div>
 
@@ -212,12 +189,12 @@ function AcademicPage() {
                 {courses.map(course => (
                     <div
                         key={course.id}
-                        className="bg-zinc-800 p-6 rounded-lg relative border border-zinc-700"
+                        className="bg-white dark:bg-zinc-800 p-6 rounded-lg relative border border-zinc-200 dark:border-zinc-700 shadow-md"
                     >
                         <div className="absolute top-3 right-3 flex gap-2">
                             <button
                                 onClick={() => handleEdit(course)}
-                                className="bg-zinc-700 hover:bg-indigo-600 w-8 h-8 rounded-full"
+                                className="bg-zinc-100 hover:bg-indigo-100 text-zinc-600 hover:text-indigo-600 dark:bg-zinc-700 dark:hover:bg-indigo-600 dark:text-white w-8 h-8 rounded-full border border-zinc-200 dark:border-transparent transition-colors"
                             >
                                 ✏️
                             </button>
@@ -226,32 +203,33 @@ function AcademicPage() {
                                     deleteCourse(course.id);
                                     toast.success("Curso eliminado");
                                 }}
-                                className="bg-zinc-700 hover:bg-red-600 w-8 h-8 rounded-full"
+                                className="bg-zinc-100 hover:bg-red-100 text-zinc-600 hover:text-red-600 dark:bg-zinc-700 dark:hover:bg-red-600 dark:text-white w-8 h-8 rounded-full border border-zinc-200 dark:border-transparent transition-colors"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-1">{course.name}</h2>
-                        <p className="text-gray-400 text-sm mb-4">
+                        <h2 className="text-2xl font-bold mb-1 text-zinc-800 dark:text-white">{course.name}</h2>
+                        <p className="text-zinc-500 dark:text-gray-400 text-sm mb-4">
                             Ciclo {course.cycle} • {course.credits} Créditos
                         </p>
 
                         <div className="flex justify-between items-end mb-2">
-                            <span className="text-sm text-gray-400">Promedio:</span>
+                            <span className="text-sm text-zinc-500 dark:text-gray-400 font-medium">Promedio:</span>
                             <span className={`text-4xl font-bold ${getScoreColor(course.average)}`}>
                                 {course.average}
                             </span>
                         </div>
 
-                        <div className="bg-zinc-900/50 p-3 rounded-md mb-4 text-sm max-h-32 overflow-y-auto">
+                        {/* LISTA DE NOTAS */}
+                        <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-md mb-4 text-sm max-h-32 overflow-y-auto border border-zinc-100 dark:border-zinc-700/50">
                             {course.grades.length === 0 ? (
-                                <p className="text-gray-600 text-center">Sin notas</p>
+                                <p className="text-zinc-400 dark:text-gray-600 text-center italic">Sin notas</p>
                             ) : (
                                 course.grades.map(g => (
                                     <div
                                         key={g.id}
-                                        className="flex justify-between items-center border-b border-zinc-700 py-1 group"
+                                        className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-700 py-1 group text-zinc-700 dark:text-gray-200"
                                     >
                                         <span>{g.name} ({g.weight}%)</span>
                                         <div className="flex items-center gap-2">
@@ -260,7 +238,7 @@ function AcademicPage() {
                                             </span>
                                             <button
                                                 onClick={() => handleEditGrade(g, course.id)}
-                                                className="text-gray-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100"
+                                                className="text-zinc-400 hover:text-indigo-500 dark:text-gray-500 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 ✏️
                                             </button>
@@ -278,7 +256,7 @@ function AcademicPage() {
                                 setValue("gradeScore", "");
                                 setValue("gradeWeight", "");
                             }}
-                            className="w-full bg-zinc-700 hover:bg-zinc-600 py-2 rounded text-sm"
+                            className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 py-2 rounded text-sm text-zinc-700 dark:text-gray-300 font-bold transition-colors"
                         >
                             + Agregar Nota
                         </button>
@@ -288,16 +266,16 @@ function AcademicPage() {
 
             {/* MODAL NOTA */}
             {selectedCourseForGrade && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-                    <div className="bg-zinc-800 p-8 rounded-lg max-w-sm w-full">
-                        <h2 className="text-xl font-bold mb-4">
+                <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-800 p-8 rounded-lg max-w-sm w-full shadow-2xl border border-zinc-200 dark:border-zinc-700">
+                        <h2 className="text-xl font-bold mb-4 text-zinc-800 dark:text-white">
                             {editingGrade ? "✏️ Editar Nota" : "📝 Nueva Nota"}
                         </h2>
 
                         <form onSubmit={handleGradeSubmit}>
                             <input
                                 placeholder="Ej: Parcial 1"
-                                className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
+                                className="w-full bg-zinc-50 dark:bg-zinc-700 px-4 py-2 rounded mb-2 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600 outline-none focus:ring-2 focus:ring-indigo-500"
                                 {...register("gradeName", { required: true })}
                             />
 
@@ -308,24 +286,16 @@ function AcademicPage() {
                                     min="0"
                                     max="20"
                                     placeholder="Nota"
-                                    className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
-                                    {...register("gradeScore", {
-                                        required: true,
-                                        min: 0,
-                                        max: 20
-                                    })}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-700 px-4 py-2 rounded mb-2 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600 outline-none focus:ring-2 focus:ring-indigo-500"
+                                    {...register("gradeScore", { required: true, min: 0, max: 20 })}
                                 />
                                 <input
                                     type="number"
                                     min="0"
                                     max="100"
                                     placeholder="Peso %"
-                                    className="w-full bg-zinc-700 px-4 py-2 rounded mb-2"
-                                    {...register("gradeWeight", {
-                                        required: true,
-                                        min: 0,
-                                        max: 100
-                                    })}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-700 px-4 py-2 rounded mb-2 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600 outline-none focus:ring-2 focus:ring-indigo-500"
+                                    {...register("gradeWeight", { required: true, min: 0, max: 100 })}
                                 />
                             </div>
 
@@ -336,7 +306,7 @@ function AcademicPage() {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedCourseForGrade(null)}
-                                    className="w-full bg-red-500 px-4 py-2 rounded hover:bg-red-600"
+                                    className="w-full bg-red-500 px-4 py-2 rounded hover:bg-red-600 text-white font-bold transition-colors"
                                 >
                                     Cancelar
                                 </button>

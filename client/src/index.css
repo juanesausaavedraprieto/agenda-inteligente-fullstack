@@ -2,19 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Un estilo oscuro base para no quedarnos ciegos */
+/* ESTILOS GLOBALES */
 body {
-  background-color: #1a1a1a;
-  color: #ffffff;
+  /* Fondo por defecto: Gris muy claro (casi blanco) */
+  /* Fondo oscuro: Gris oscuro casi negro */
+  @apply bg-zinc-50 text-zinc-900 transition-colors duration-300;
 }
+
+/* Cuando la clase 'dark' está en el HTML, aplica estos estilos al body */
+.dark body {
+  @apply bg-zinc-900 text-white;
+}
+
+/* CLASES UTILITARIAS PERSONALIZADAS */
 .nav-link {
-  @apply text-gray-300 hover:text-white transition;
+  @apply text-zinc-600 hover:text-zinc-900 dark:text-gray-300 dark:hover:text-white transition-colors;
 }
 
 .btn-indigo {
-  @apply bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded transition;
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition shadow-md active:scale-95;
 }
 
 .btn-red {
-  @apply bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded transition;
+  @apply bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition shadow-md active:scale-95;
+}
+
+/* --- ESTILOS DEL CALENDARIO (React-Big-Calendar) --- */
+
+/* 1. TEXTOS (Días, Encabezados, Botones) */
+.rbc-date-cell,
+.rbc-header,
+.rbc-toolbar button,
+.rbc-toolbar-label {
+    /* Texto oscuro en modo claro, Texto claro en modo oscuro */
+    @apply text-zinc-700 dark:text-zinc-200 !important; 
+}
+
+/* 2. Fondo de las celdas (Crucial para que no se vea blanco en modo oscuro) */
+.rbc-day-bg {
+    @apply bg-transparent !important; /* Deja ver el color del contenedor padre */
+}
+
+/* 3. Días fuera del mes (Off-range) */
+.rbc-off-range-bg {
+    @apply bg-zinc-100 dark:bg-zinc-900/50 !important;
+}
+
+/* 4. Día "HOY" */
+.rbc-today {
+    @apply bg-blue-100 dark:bg-blue-900/40 !important;
+}
+
+/* 5. Botones de la barra superior (Mes, Semana, Hoy) */
+.rbc-toolbar button {
+    @apply border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 !important;
+}
+
+/* 6. Botón Activo */
+.rbc-toolbar button.rbc-active {
+    @apply bg-zinc-200 dark:bg-zinc-600 text-black dark:text-white shadow-inner !important;
+}
+
+/* 7. Líneas de la cuadrícula (Bordes) */
+.rbc-month-view, 
+.rbc-header, 
+.rbc-month-row, 
+.rbc-day-bg,
+.rbc-time-view, 
+.rbc-time-header, 
+.rbc-time-content {
+    @apply border-zinc-200 dark:border-zinc-700 !important;
+}
+
+/* 8. Botón "Ver más" */
+.rbc-show-more {
+    @apply text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent !important;
 }

@@ -23,7 +23,6 @@ function TaskFormPage() {
         setValue("category", task.category);
         setValue("type", task.type);
         if (task.dueDate) {
-          // Formateamos para que el input datetime-local lo lea (YYYY-MM-DDTHH:MM)
           setValue(
             "dueDate",
             new Date(task.dueDate).toISOString().slice(0, 16)
@@ -35,20 +34,14 @@ function TaskFormPage() {
   }, [params.id, setValue, getTask]);
 
   const onSubmit = handleSubmit(async (data) => {
-    
-    // ==========================================
-    // 🛡️ VALIDACIÓN DE FECHAS (NO PASADO)
-    // ==========================================
     const selectedDate = new Date(data.dueDate);
     const now = new Date();
 
-    // Comparamos milisegundos. Si la fecha seleccionada es menor a "ahora mismo".
     if (selectedDate < now) {
        toast.error("⚠️ ¡Viajar en el tiempo no es posible! La fecha debe ser hoy o en el futuro.");
-       return; // ⛔ ESTO DETIENE EL GUARDADO
+       return; 
     }
 
-    // Preparar datos para el backend
     const dataValid = {
       ...data,
       dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
@@ -62,7 +55,6 @@ function TaskFormPage() {
         await createTask(dataValid);
         toast.success("Tarea creada exitosamente 🎉");
       }
-      
       navigate("/tasks");
     } catch (error) {
       console.error(error);
@@ -72,30 +64,30 @@ function TaskFormPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-100px)] items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">
+      {/* CARD: Asegúrate de que tu componente Card acepte className y maneje dark:bg-zinc-800 */}
+      <Card className="w-full max-w-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl">
+        <h1 className="text-2xl font-bold mb-6 text-center text-zinc-800 dark:text-white">
           {params.id ? "✏️ Editar Tarea" : "🆕 Nueva Tarea"}
         </h1>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* TÍTULO */}
           <div>
-            <label className="text-sm text-gray-400">Título</label>
+            <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">Título</label>
             <Input
               type="text"
               placeholder="Ej: Examen Final de Base de Datos"
               {...register("title", { required: true })}
               autoFocus
+              className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600"
             />
           </div>
 
-          {/* PRIORIDAD + CATEGORÍA */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-400">Prioridad</label>
+              <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">Prioridad</label>
               <select
                 {...register("priority")}
-                className="w-full bg-zinc-700 text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-600"
+                className="w-full bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-300 dark:border-zinc-600"
               >
                 <option value="LOW">Baja 🟢</option>
                 <option value="MEDIUM">Media 🟡</option>
@@ -105,10 +97,10 @@ function TaskFormPage() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-400">Categoría</label>
+              <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">Categoría</label>
               <select
                 {...register("category")}
-                className="w-full bg-zinc-700 text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-600"
+                className="w-full bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-300 dark:border-zinc-600"
               >
                 <option value="ACADEMIC">Académico 🎓</option>
                 <option value="PERSONAL">Personal 🏠</option>
@@ -119,34 +111,32 @@ function TaskFormPage() {
             </div>
           </div>
 
-          {/* FECHA */}
           <div>
-            <label className="text-sm text-gray-400">Fecha Límite</label>
+            <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">Fecha Límite</label>
             <Input
               type="datetime-local"
               {...register("dueDate", { required: true })}
+              className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600"
             />
           </div>
 
-          {/* DESCRIPCIÓN */}
           <div>
-            <label className="text-sm text-gray-400">Descripción</label>
+            <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">Descripción</label>
             <textarea
               rows="3"
               placeholder="Descripción (Opcional)"
               {...register("description")}
-              className="w-full bg-zinc-700 text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none resize-none border border-zinc-600 placeholder-zinc-400"
+              className="w-full bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none resize-none border border-zinc-300 dark:border-zinc-600 placeholder-zinc-400"
             />
           </div>
 
-          {/* TIPO */}
           <div>
-            <label className="text-sm text-gray-400">
+            <label className="text-sm font-bold text-zinc-600 dark:text-gray-400">
               Tipo de Actividad
             </label>
             <select
               {...register("type")}
-              className="w-full bg-zinc-700 text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-600"
+              className="w-full bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white px-4 py-2 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none border border-zinc-300 dark:border-zinc-600"
             >
               <option value="TASK">Recordatorio General ⚪</option>
               <option value="EXAM">Examen 🔴</option>
@@ -155,8 +145,7 @@ function TaskFormPage() {
             </select>
           </div>
 
-          {/* BOTÓN */}
-          <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 mt-4 transition-all">
+          <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 mt-4 transition-all shadow-lg shadow-green-500/20">
             {params.id ? "Actualizar Tarea" : "Guardar Tarea"}
           </Button>
         </form>

@@ -1,6 +1,11 @@
 import prisma from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken'; // Necesario solo para verifyToken
+import { OAuth2Client } from 'google-auth-library';
+import { createAccessToken } from '../lib/jwt.js'; // 👈 IMPORTANTE: Tu nueva función
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const TOKEN_SECRET = process.env.JWT_SECRET || 'secret123';
 
 // 1. REGISTRO
 export const register = async (req, res) => {
@@ -9,7 +14,7 @@ export const register = async (req, res) => {
 
     // Verificar si ya existe
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json(["El usuario ya existe"]); // Array para que Zod lo maneje igual en el front
+    if (existingUser) return res.status(400).json(["El usuario ya existe"]);
 
     // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -26,10 +31,8 @@ export const register = async (req, res) => {
       },
     });
 
-    // Crear Token JWT
-    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET || 'secret123', {
-      expiresIn: '7d',
-    });
+    // ✅ MEJORA: Usamos la función helper
+    const token = await createAccessToken({ id: newUser.id });
 
     res.status(201).json({ 
       message: "Usuario creado exitosamente", 
@@ -55,10 +58,8 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json(["Credenciales inválidas"]);
 
-    // Generar Token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secret123', {
-      expiresIn: '7d',
-    });
+    // ✅ MEJORA: Usamos la función helper
+    const token = await createAccessToken({ id: user.id });
 
     res.json({ 
       message: "Login exitoso", 
@@ -71,16 +72,13 @@ export const login = async (req, res) => {
   }
 };
 
-// 3. LOGOUT (Cierre de sesión)
+// 3. LOGOUT
 export const logout = (req, res) => {
-    // Como el token se guarda en el Frontend (localStorage), 
-    // el backend solo responde OK. Si usaras cookies, aquí se borrarían.
     res.sendStatus(200);
 };
 
-// 4. PERFIL (Profile)
+// 4. PERFIL
 export const profile = async (req, res) => {
-    // req.user lo pone el middleware authRequired
     const userFound = await prisma.user.findUnique({
         where: { id: req.user.id }
     });
@@ -97,13 +95,13 @@ export const profile = async (req, res) => {
     });
 };
 
-// 5. VERIFICAR TOKEN (Para que el frontend sepa si sigues logueado al recargar)
+// 5. VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) return res.status(401).json({ message: "No autorizado" });
 
-  jwt.verify(token, process.env.JWT_SECRET || 'secret123', async (err, user) => {
+  jwt.verify(token, TOKEN_SECRET, async (err, user) => {
     if (err) return res.status(401).json({ message: "No autorizado" });
 
     const userFound = await prisma.user.findUnique({
@@ -118,4 +116,52 @@ export const verifyToken = async (req, res) => {
       email: userFound.email,
     });
   });
+};
+
+// 6. LOGIN CON GOOGLE
+export const googleLogin = async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // Verificar token con Google
+    const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const { name, email } = ticket.getPayload();
+
+    // Buscar o Crear usuario
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: name, // Asegúrate de que tu modelo use 'name' o 'username'
+          email: email,
+          password: "", 
+          // Si tienes username en tu schema y es unique, genera uno o usa el email
+          // username: email.split('@')[0] 
+        }
+      });
+    }
+
+    // ✅ MEJORA: Usamos la función helper
+    const accessToken = await createAccessToken({ id: user.id });
+
+    // NOTA: Si usas cookies, descomenta esto, si usas headers, manda el token en el json
+    // res.cookie("token", accessToken);
+
+    res.json({
+      token: accessToken, // Devolvemos el token para que el front lo guarde
+      user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error en autenticación con Google" });
+  }
 };

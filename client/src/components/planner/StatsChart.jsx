@@ -18,8 +18,8 @@ function StatsChart({ tasks }) {
   ];
 
   return (
-    <div className="bg-zinc-800 p-4 sm:p-6 rounded-lg w-full shadow-lg">
-      <h2 className="text-base sm:text-xl font-bold mb-4 text-center">
+    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-4 sm:p-6 rounded-lg w-full shadow-lg transition-colors duration-200">
+      <h2 className="text-base sm:text-xl font-bold mb-4 text-center text-gray-800 dark:text-white">
         📊 Resumen de Pendientes
       </h2>
 
@@ -29,24 +29,29 @@ function StatsChart({ tasks }) {
             data={data}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" vertical={false} />
+            {/* Grid neutro */}
+            <CartesianGrid strokeDasharray="3 3" stroke="#666" vertical={false} opacity={0.3} />
+            
             <XAxis
               dataKey="name"
-              tick={{ fill: "#ccc", fontSize: 12 }}
+              tick={{ fill: "#888", fontSize: 12 }} 
               stroke="#888"
             />
             <YAxis
               allowDecimals={false}
-              tick={{ fill: "#ccc", fontSize: 12 }}
+              tick={{ fill: "#888", fontSize: 12 }}
               stroke="#888"
             />
+            
+            {/* Tooltip personalizado para modo oscuro/claro forzado a oscuro para contraste */}
             <Tooltip
-              cursor={{ fill: "#27272a", opacity: 0.5 }}
+              cursor={{ fill: "gray", opacity: 0.1 }}
               contentStyle={{
-                backgroundColor: "#18181b",
-                border: "1px solid #3f3f46",
+                backgroundColor: "#27272a", // Siempre oscuro para contraste
+                border: "1px solid #52525b",
                 borderRadius: "8px",
                 fontSize: "0.85rem",
+                color: "#fff"
               }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>

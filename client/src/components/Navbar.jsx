@@ -1,86 +1,171 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 
 function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Función para cerrar menú al hacer clic
   const closeMenu = () => setMenuOpen(false);
 
-  // Componentes auxiliares para enlaces
+  // --- BOTÓN DE TEMA ADAPTABLE ---
+  const ThemeToggleButton = () => (
+    <button
+      onClick={() => {
+        toggleTheme();
+      }}
+      className="
+        w-10 h-10 flex items-center justify-center rounded-full transition-colors border shadow-sm
+        bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200 
+        dark:bg-zinc-700 dark:text-yellow-400 dark:border-zinc-600 dark:hover:bg-zinc-600
+      "
+      title={theme === 'dark' ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+    >
+      {theme === 'dark' ? "☀️" : "🌙"}
+    </button>
+  );
+
+  // --- ENLACES AUTH ---
   const AuthLinks = () => (
     <>
-      <Link to="/dashboard" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Inicio</Link>
-      <Link to="/tasks" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Tareas</Link>
-      <Link to="/calendar" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Calendario</Link>
-      <Link to="/pets" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Mascotas</Link>
-      <Link to="/finance" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Finanzas</Link>
-      <Link to="/academic" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Académico</Link>
-      <Link to="/notes" onClick={closeMenu} className="nav-link hover:text-indigo-400 transition">Notas</Link>
-      {/* NUEVO LINK DE SALUD */}
-      <Link to="/health" onClick={closeMenu} className="nav-link text-green-400 hover:text-green-300 transition font-bold">Salud </Link>
+      {["Dashboard", "Tasks", "Calendar", "Pets", "Finance", "Academic", "Notes"].map((item) => (
+        <Link
+          key={item}
+          to={`/${item.toLowerCase()}`}
+          onClick={closeMenu}
+          className="font-medium transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+        >
+          {item === "Dashboard" ? "Inicio" : 
+           item === "Tasks" ? "Tareas" : 
+           item === "Calendar" ? "Calendario" :
+           item === "Pets" ? "Mascotas" :
+           item === "Finance" ? "Finanzas" :
+           item === "Academic" ? "Académico" : "Notas"}
+        </Link>
+      ))}
+      
+      <Link 
+        to="/health" 
+        onClick={closeMenu} 
+        className="font-bold transition-colors text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+      >
+        Salud
+      </Link>
     </>
   );
 
+  // --- ENLACES GUEST ---
   const GuestLinks = () => (
     <>
-      <Link to="/login" onClick={closeMenu} className="bg-indigo-600 px-4 py-2 rounded text-white hover:bg-indigo-700">Login</Link>
-      <Link to="/register" onClick={closeMenu} className="bg-zinc-600 px-4 py-2 rounded text-white hover:bg-zinc-500">Registro</Link>
+      <Link 
+        to="/login" 
+        onClick={closeMenu} 
+        className="px-4 py-2 rounded-lg font-medium transition-colors bg-indigo-600 text-white hover:bg-indigo-700"
+      >
+        Login
+      </Link>
+      <Link 
+        to="/register" 
+        onClick={closeMenu} 
+        className="px-4 py-2 rounded-lg font-medium transition-colors bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600"
+      >
+        Registro
+      </Link>
     </>
   );
 
   return (
-    <nav className="bg-zinc-700 my-3 rounded-lg px-4 py-4 md:px-10 relative z-50">
+    // CONTENEDOR PRINCIPAL: Blanco en Light, Oscuro en Dark
+    <nav className="
+      my-3 rounded-xl px-4 py-4 md:px-10 relative z-50 shadow-md transition-colors duration-300
+      bg-white text-zinc-800 
+      dark:bg-zinc-800 dark:text-zinc-100
+    ">
       <div className="flex items-center justify-between">
         
         {/* LOGO */}
         <Link to={isAuthenticated ? "/dashboard" : "/"} onClick={closeMenu}>
-          <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-            Agenda Inteligente 🧠
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            Agenda Inteligente <span className="animate-pulse">🧠</span>
           </h1>
         </Link>
 
-        {/* HAMBURGUESA */}
+        {/* HAMBURGUESA (Móvil) */}
         <button
-          className="md:hidden text-white text-2xl focus:outline-none"
+          className="md:hidden text-2xl focus:outline-none transition-transform active:scale-90"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? "✕" : "☰"}
         </button>
 
-        {/* LINKS DESKTOP */}
-        <ul className="hidden md:flex gap-4 lg:gap-6 items-center text-sm lg:text-base">
-          {isAuthenticated ? <AuthLinks /> : <GuestLinks />}
-        </ul>
+        {/* --- DESKTOP --- */}
+        <div className="hidden md:flex items-center gap-6">
+            <ul className="flex gap-5 items-center text-sm lg:text-base">
+                {isAuthenticated ? <AuthLinks /> : <GuestLinks />}
+            </ul>
 
-        {/* USUARIO DESKTOP */}
-        {isAuthenticated && (
-          <div className="hidden md:flex items-center gap-4">
-            <span className="text-sky-400 font-semibold text-sm">
-              Hola, {user?.name?.split(" ")[0]}
-            </span>
-            <button onClick={() => { logout(); closeMenu(); }} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition">
-              Salir
-            </button>
-          </div>
-        )}
+            {/* Separador Vertical */}
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
+
+            <ThemeToggleButton />
+
+            {isAuthenticated && (
+                <div className="flex items-center gap-4">
+                    <span className="font-semibold text-sm text-sky-600 dark:text-sky-400">
+                        {user?.name?.split(" ")[0]}
+                    </span>
+                    <button 
+                        onClick={() => { logout(); closeMenu(); }} 
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                        Salir
+                    </button>
+                </div>
+            )}
+        </div>
       </div>
 
-      {/* MENÚ MÓVIL (DESPLEGABLE) */}
-      <div className={`${menuOpen ? "flex" : "hidden"} md:hidden flex-col items-center gap-4 mt-4 py-4 border-t border-zinc-600`}>
+      {/* --- MENÚ MÓVIL --- */}
+      <div className={`
+        ${menuOpen ? "flex" : "hidden"} 
+        md:hidden flex-col items-center gap-4 mt-4 py-4 
+        border-t border-zinc-100 dark:border-zinc-700
+        animate-fade-in
+      `}>
         {isAuthenticated ? (
           <>
-            <AuthLinks />
-            <div className="border-t border-zinc-600 w-full my-2"></div>
-            <span className="text-sky-400 font-bold">Hola, {user?.name}</span>
-            <button onClick={() => { logout(); closeMenu(); }} className="bg-red-600 text-white px-6 py-2 rounded w-full">
-              Cerrar Sesión
-            </button>
+            <div className="flex flex-col items-center gap-4 w-full">
+                <AuthLinks />
+            </div>
+            
+            <div className="border-t border-zinc-100 dark:border-zinc-700 w-full my-2"></div>
+            
+            <div className="flex items-center justify-between w-full px-4">
+                 <div className="flex items-center gap-3">
+                    <ThemeToggleButton />
+                    <span className="font-bold text-sky-600 dark:text-sky-400">
+                        Hola, {user?.name?.split(" ")[0]}
+                    </span>
+                 </div>
+                 <button 
+                    onClick={() => { logout(); closeMenu(); }} 
+                    className="text-red-600 dark:text-red-400 font-medium"
+                 >
+                    Salir
+                 </button>
+            </div>
           </>
         ) : (
-          <GuestLinks />
+          <>
+            <div className="flex gap-4 w-full justify-center">
+                <GuestLinks />
+            </div>
+            <div className="mt-2">
+                <ThemeToggleButton />
+            </div>
+          </>
         )}
       </div>
     </nav>

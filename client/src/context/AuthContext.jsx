@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import axios from "../api/axios";
-
+import Cookies from "js-cookie";
 export const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -82,10 +82,27 @@ export const AuthProvider = ({ children }) => {
     
     checkLogin();
   }, []);
-
+const signinWithGoogle = async (googleToken) => {
+    try {
+        // Enviamos el token al backend
+        const res = await axios.post("/auth/google", { token: googleToken });
+        Cookies.set("token", res.data.token, { expires: 7 });
+        // Si todo sale bien, actualizamos el estado
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+        setErrors([]); // Limpiamos errores previos
+    } catch (error) {
+        console.error(error);
+        if (Array.isArray(error.response.data)) {
+            setErrors(error.response.data);
+        } else {
+            setErrors([error.response.data.message]);
+        }
+    }
+  };
   // 3. Importante: No renderizar nada hasta terminar de verificar (Evita parpadeos)
   if (loading) return <h1 className="text-white text-center mt-10">Cargando... ⏳</h1>;
-
+  
   return (
     <AuthContext.Provider value={{ 
       signup, 
@@ -94,7 +111,8 @@ export const AuthProvider = ({ children }) => {
       user, 
       isAuthenticated, 
       errors,
-      loading 
+      signinWithGoogle,
+      loading
     }}>
       {children}
     </AuthContext.Provider>
