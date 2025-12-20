@@ -7,60 +7,118 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const startCronJobs = () => {
   console.log("🕰️ Servicio de Cron Jobs iniciado...");
 
-  // Ejecutar TODOS LOS DÍAS a las 8:00 AM ('0 8 * * *')
-  // Para pruebas rápidas usa: '*/30 * * * * *' (cada 30 seg)
+  // Se ejecuta TODOS LOS DÍAS a las 8:00 AM
   cron.schedule('0 8 * * *', async () => {
-    console.log("🔍 Buscando tareas por vencer...");
+    console.log("🔍 Ejecutando análisis diario del asistente...");
     
+    // Definir rango de tiempo (MAÑANA)
+    const tomorrowStart = new Date();
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    tomorrowStart.setHours(0, 0, 0, 0);
+
+    const tomorrowEnd = new Date(tomorrowStart);
+    tomorrowEnd.setHours(23, 59, 59, 999);
+
     try {
-      // Calcular fecha de MAÑANA
-      const tomorrowStart = new Date();
-      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-      tomorrowStart.setHours(0, 0, 0, 0);
-
-      const tomorrowEnd = new Date(tomorrowStart);
-      tomorrowEnd.setHours(23, 59, 59, 999);
-
-      // Buscar tareas que vencen MAÑANA y no están completas
+      // ==========================================
+      // 1. RECORDATORIO DE TAREAS Y EVENTOS 📝
+      // ==========================================
       const tasksDue = await prisma.task.findMany({
         where: {
-          dueDate: {
-            gte: tomorrowStart,
-            lte: tomorrowEnd
-          },
+          dueDate: { gte: tomorrowStart, lte: tomorrowEnd },
           isCompleted: false
         },
-        include: { user: true } // Necesitamos el email del dueño
+        include: { user: true }
       });
 
-      if (tasksDue.length === 0) return console.log("✅ Nada vence mañana.");
-
-      // Enviar correos
       for (const task of tasksDue) {
         if (!task.user.email) continue;
-
-        const { data, error } = await resend.emails.send({
-          from: 'Agenda Inteligente <onboarding@resend.dev>', // Usa este email de prueba si no tienes dominio
-          to: [task.user.email], // En modo prueba solo puedes enviarte a ti mismo
-          subject: `⚠️ URGENTE: ${task.title} vence mañana`,
+        
+        await resend.emails.send({
+          from: 'Agenda Inteligente <onboarding@resend.dev>',
+          to: [task.user.email],
+          subject: `⚡ Pendiente para mañana: ${task.title}`,
           html: `
-            <h1>¡Hola ${task.user.name}! 👋</h1>
-            <p>Te recordamos que tienes una tarea pendiente para mañana:</p>
-            <div style="background: #f4f4f5; padding: 20px; border-radius: 10px; border-left: 5px solid #ef4444;">
-                <h2 style="margin: 0; color: #333;">${task.title}</h2>
-                <p style="color: #666;">${task.description || "Sin descripción"}</p>
-                <p><strong>Vence:</strong> ${new Date(task.dueDate).toLocaleDateString()}</p>
-            </div>
-            <p>¡Entra a tu Agenda para completarla!</p>
+            <h1>Hola ${task.user.name}, recuerda tu ${task.category.toLowerCase()}:</h1>
+            <p><strong>${task.title}</strong> vence mañana.</p>
+            <p>${task.description || ""}</p>
           `
         });
+        console.log(`✅ Correo Tarea enviado a ${task.user.email}`);
+      }
 
-        if (error) console.error("Error enviando email:", error);
-        else console.log(`📧 Correo enviado a ${task.user.email} sobre ${task.title}`);
+      // ==========================================
+      // 2. RECORDATORIO DE VACUNAS 🐾
+      // ==========================================
+      // Asumiendo que tu schema tiene un modelo Vaccine relacionado con Pet y User
+      /* Necesitas que tu Prisma Schema tenga la relación inversa para esto.
+         Si no, hacemos la búsqueda en Vaccine e incluimos Pet -> User
+      */
+      const vaccinesDue = await prisma.vaccine.findMany({
+        where: {
+          nextDate: { gte: tomorrowStart, lte: tomorrowEnd }
+        },
+        include: {
+          pet: { include: { user: true } } // Accedemos al dueño a través de la mascota
+        }
+      });
+
+      for (const vaccine of vaccinesDue) {
+        if (!vaccine.pet.user.email) continue;
+
+        await resend.emails.send({
+          from: 'Agenda Inteligente <onboarding@resend.dev>',
+          to: [vaccine.pet.user.email],
+          subject: `🐾 Vacuna pendiente para ${vaccine.pet.name}`,
+          html: `
+            <h1>¡Cuidado con ${vaccine.pet.name}!</h1>
+            <p>Mañana le toca su vacuna de: <strong>${vaccine.name}</strong>.</p>
+            <p>No olvides llevarlo al veterinario.</p>
+          `
+        });
+        console.log(`✅ Correo Vacuna enviado a ${vaccine.pet.user.email}`);
+      }
+
+      // ==========================================
+      // 3. ALERTA DE FINANZAS BAJAS 💸
+      // ==========================================
+      // Esto revisa todos los usuarios y calcula su saldo actual
+      const allUsers = await prisma.user.findMany({
+        include: { transactions: true }
+      });
+
+      for (const user of allUsers) {
+        if (!user.email) continue;
+
+        // Calculamos saldo
+        const income = user.transactions
+          .filter(t => t.type === "INCOME")
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+          
+        const expense = user.transactions
+          .filter(t => t.type === "EXPENSE")
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+
+        const balance = income - expense;
+
+        // Si el saldo es menor a 50 soles (o la moneda que uses) y es positivo
+        if (balance < 50 && balance > 0) {
+           await resend.emails.send({
+            from: 'Agenda Inteligente <onboarding@resend.dev>',
+            to: [user.email],
+            subject: `💰 Alerta: Saldo bajo (S/ ${balance.toFixed(2)})`,
+            html: `
+              <h1>Ojo con tus finanzas 📉</h1>
+              <p>Tu saldo actual es de solo <strong>S/ ${balance.toFixed(2)}</strong>.</p>
+              <p>Trata de no gastar de más hasta tu próximo ingreso.</p>
+            `
+          });
+          console.log(`✅ Correo Finanzas enviado a ${user.email}`);
+        }
       }
 
     } catch (error) {
-      console.error("Error en Cron Job:", error);
+      console.error("🔥 Error en Cron Job General:", error);
     }
   });
 };
