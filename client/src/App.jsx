@@ -21,7 +21,7 @@ import AcademicPage from "./pages/AcademicPage";
 import NotesPage from "./pages/NotesPage";
 import CalendarPage from "./pages/CalendarPage";
 import HealthPage from "./pages/HealthPage";
-
+import ProfilePage from "./pages/ProfilePage";
 // Components
 import Navbar from "./components/Navbar";
 import { Toaster } from 'sonner';
@@ -63,6 +63,7 @@ function App() {
                             <Route path="/notes" element={<NotesPage />} />
                             <Route path="/calendar" element={<CalendarPage />} />
                             <Route path="/health" element={<HealthPage />} />
+                            <Route path="/profile" element={<ProfilePage />} />
                           </Route>
                         </Routes>
 

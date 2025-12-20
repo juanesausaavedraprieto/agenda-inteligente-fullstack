@@ -27,17 +27,19 @@ export function PetsProvider({ children }) {
       setPets([...pets, res.data]);
     } catch (error) {
       console.error(error);
+      throw error; // Re-lanzar para manejar en UI
     }
   };
 
-  const addVaccine = async (vaccineData) => {
-    try {
-      await axios.post("/pets/vaccines", vaccineData);
-      // Recargar mascotas para ver la vacuna nueva en la lista
-      await getPets(); 
-    } catch (error) {
-      console.error(error);
-    }
+  // --- FUNCIÓN NUEVA: ACTUALIZAR MASCOTA ---
+  const updatePet = async (id, pet) => {
+      try {
+          const res = await axios.put(`/pets/${id}`, pet);
+          setPets(pets.map(p => p.id === id ? res.data : p));
+      } catch (error) {
+          console.error(error);
+          throw error;
+      }
   };
 
   const deletePet = async (id) => {
@@ -48,12 +50,20 @@ export function PetsProvider({ children }) {
           console.error(error);
       }
   }
-  // ... dentro de PetsProvider
 
-const updateVaccine = async (id, vaccine) => {
+  const addVaccine = async (vaccineData) => {
+    try {
+      await axios.post("/pets/vaccines", vaccineData);
+      await getPets(); 
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const updateVaccine = async (id, vaccine) => {
     try {
         const res = await axios.put(`/pets/vaccines/${id}`, vaccine);
-        // Actualizamos la lista local para ver el cambio al instante
         const updatedPets = pets.map(pet => {
             if (pet.id === vaccine.petId) {
                 return {
@@ -66,10 +76,20 @@ const updateVaccine = async (id, vaccine) => {
         setPets(updatedPets);
     } catch (error) {
         console.error(error);
+        throw error;
     }
-};
+  };
+
   return (
-    <PetsContext.Provider value={{ pets, getPets, createPet, addVaccine, deletePet, updateVaccine }}>
+    <PetsContext.Provider value={{ 
+        pets, 
+        getPets, 
+        createPet, 
+        updatePet, // <--- EXPORTADA
+        deletePet, 
+        addVaccine, 
+        updateVaccine 
+    }}>
       {children}
     </PetsContext.Provider>
   );

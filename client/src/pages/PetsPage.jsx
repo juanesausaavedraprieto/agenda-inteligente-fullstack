@@ -4,32 +4,72 @@ import { useForm } from "react-hook-form";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 
 function PetsPage() {
-  const { getPets, pets, createPet, addVaccine, updateVaccine, deletePet } = usePets();
-  const { register, handleSubmit, reset } = useForm();
+  const { getPets, pets, createPet, updatePet, addVaccine, updateVaccine, deletePet } = usePets();
+  const { register, handleSubmit, reset, setValue } = useForm();
 
   const [showPetForm, setShowPetForm] = useState(false);
+  const [editingPetId, setEditingPetId] = useState(null); // Estado para saber si editamos mascota
+  
   const [selectedPetForVaccine, setSelectedPetForVaccine] = useState(null);
   const [editingVaccine, setEditingVaccine] = useState(null);
   const [vaccineError, setVaccineError] = useState("");
 
   useEffect(() => {
     getPets();
-  }, []); 
+  }, []);
 
-  /* ---------- NUEVA MASCOTA ---------- */
+  /* ---------- CREAR / EDITAR MASCOTA ---------- */
   const onSubmitPet = handleSubmit(async (data) => {
+    // 1. VALIDACIÓN FECHA NACIMIENTO (No futuro)
+    if (data.birthDate) {
+        const birth = new Date(data.birthDate);
+        const today = new Date();
+        today.setHours(0,0,0,0); // Ignorar hora
+        // Ajustar zona horaria si es necesario, pero comparación simple sirve
+        if (birth > today) {
+            return toast.error("⛔ La fecha de nacimiento no puede ser en el futuro.");
+        }
+    }
+
     try {
-      await createPet(data);
-      toast.success("Mascota registrada correctamente 🐾");
+      if (editingPetId) {
+        // MODO EDICIÓN
+        await updatePet(editingPetId, data);
+        toast.success("Mascota actualizada correctamente 🐾");
+      } else {
+        // MODO CREACIÓN
+        await createPet(data);
+        toast.success("Mascota registrada correctamente 🐾");
+      }
       setShowPetForm(false);
+      setEditingPetId(null);
       reset();
     } catch (error) {
-      toast.error("Error al registrar mascota");
+      toast.error("Error al guardar mascota");
     }
   });
+
+  const handleEditPet = (pet) => {
+      setEditingPetId(pet.id);
+      setValue("name", pet.name);
+      setValue("species", pet.species);
+      setValue("breed", pet.breed);
+      if(pet.birthDate) {
+          setValue("birthDate", new Date(pet.birthDate).toISOString().split('T')[0]);
+      }
+      setShowPetForm(true);
+      // Scroll arriba en móvil
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelPetForm = () => {
+      setShowPetForm(false);
+      setEditingPetId(null);
+      reset();
+  };
 
   /* ---------- BORRAR MASCOTA (Con confirmación) ---------- */
   const handleDeletePet = (id) => {
@@ -58,7 +98,7 @@ function PetsPage() {
     ));
   };
 
-  /* ---------- MODALES ---------- */
+  /* ---------- MODALES VACUNAS ---------- */
   const openAddModal = (petId) => {
     setSelectedPetForVaccine(petId);
     setEditingVaccine(null);
@@ -77,7 +117,7 @@ function PetsPage() {
     setVaccineError("");
   };
 
-  /* ---------- GUARDAR VACUNA ---------- */
+  /* ---------- GUARDAR VACUNA (Crear o Editar) ---------- */
   const handleVaccineSubmit = async (e) => {
     e.preventDefault();
     setVaccineError("");
@@ -116,16 +156,13 @@ function PetsPage() {
 
     try {
       if (editingVaccine) {
-        if (updateVaccine) {
+          // ACTUALIZAR VACUNA
           await updateVaccine(editingVaccine.id, vaccineData);
           toast.success("Vacuna actualizada 💉");
-        } else {
-          toast.error("Falta implementar updateVaccine en el Contexto");
-          return;
-        }
       } else {
-        await addVaccine(vaccineData);
-        toast.success("Vacuna agregada 💉");
+          // CREAR VACUNA
+          await addVaccine(vaccineData);
+          toast.success("Vacuna agregada 💉");
       }
       closeModal();
     } catch (error) {
@@ -143,7 +180,10 @@ function PetsPage() {
           Mis Mascotas 🐾
         </h1>
         <button
-          onClick={() => setShowPetForm(!showPetForm)}
+          onClick={() => {
+              if (showPetForm) handleCancelPetForm();
+              else setShowPetForm(true);
+          }}
           className="w-full sm:w-auto bg-indigo-600 px-4 py-2 rounded-md hover:bg-indigo-700 transition text-white font-bold shadow-lg shadow-indigo-500/20"
         >
           {showPetForm ? "Cancelar" : "Registrar Mascota"}
@@ -154,14 +194,22 @@ function PetsPage() {
       {showPetForm && (
         <div className="mb-8 flex justify-center">
           <Card className="w-full max-w-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-xl">
-            <h2 className="text-lg font-bold mb-4 text-center text-zinc-800 dark:text-white">Nueva Mascota</h2>
+            <h2 className="text-lg font-bold mb-4 text-center text-zinc-800 dark:text-white">
+                {editingPetId ? "Editar Mascota" : "Nueva Mascota"}
+            </h2>
             <form onSubmit={onSubmitPet} className="space-y-2">
               <Input placeholder="Nombre" {...register("name", { required: true })} className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600" />
               <Input placeholder="Especie" {...register("species", { required: true })} className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600" />
               <Input placeholder="Raza (opcional)" {...register("breed")} className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600" />
               <label className="text-xs text-zinc-500 dark:text-gray-400 font-bold ml-1">Fecha de Nacimiento</label>
               <Input type="date" {...register("birthDate")} className="bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-600" />
-              <Button className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white">Guardar Mascota</Button>
+              
+              <div className="flex gap-2 mt-2">
+                  <Button type="button" onClick={handleCancelPetForm} className="flex-1 bg-zinc-500 hover:bg-zinc-600 text-white">Cancelar</Button>
+                  <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+                      {editingPetId ? "Actualizar" : "Guardar"}
+                  </Button>
+              </div>
             </form>
           </Card>
         </div>
@@ -171,13 +219,25 @@ function PetsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {pets.map((pet) => (
           <div key={pet.id} className="bg-white dark:bg-zinc-800 p-4 sm:p-6 rounded-lg relative border border-zinc-200 dark:border-zinc-700 shadow-md">
-            <button
-              onClick={() => handleDeletePet(pet.id)} 
-              className="absolute top-3 right-3 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 text-lg transition-colors"
-              title="Eliminar Mascota"
-            >
-              ✕
-            </button>
+            
+            {/* BOTONES ACCIÓN MASCOTA */}
+            <div className="absolute top-3 right-3 flex gap-2">
+                 <button
+                  onClick={() => handleEditPet(pet)} 
+                  className="text-zinc-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400 text-lg transition-colors p-1"
+                  title="Editar Mascota"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => handleDeletePet(pet.id)} 
+                  className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 text-lg transition-colors p-1"
+                  title="Eliminar Mascota"
+                >
+                  ✕
+                </button>
+            </div>
+
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-zinc-100 dark:bg-zinc-700 p-3 rounded-full text-xl border border-zinc-200 dark:border-zinc-600 shadow-sm">
                 {pet.species.toLowerCase().includes('gato') ? '🐱' : '🐶'}
@@ -206,7 +266,7 @@ function PetsPage() {
                         <button 
                           onClick={() => openEditModal(pet.id, v)}
                           className="text-zinc-400 hover:text-indigo-500 dark:text-gray-500 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Editar fecha"
+                          title="Editar vacuna"
                         >
                           ✏️
                         </button>
@@ -226,7 +286,7 @@ function PetsPage() {
         ))}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL VACUNAS */}
       {selectedPetForVaccine && (
         <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 grid place-items-center px-4 backdrop-blur-sm">
           <div className="w-full max-w-md bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-2xl border border-zinc-200 dark:border-zinc-700">

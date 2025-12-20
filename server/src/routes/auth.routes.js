@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, register, logout, profile, verifyToken, googleLogin } from "../controllers/auth.controller.js";
+import { login, register, logout, profile,updateProfile, verifyToken, googleLogin } from "../controllers/auth.controller.js";
 import { authRequired } from "../middlewares/auth.middleware.js";
 
 // IMPORTAR VALIDATOR Y SCHEMAS
@@ -15,6 +15,7 @@ router.post("/login", validateSchema(loginSchema), login);
 router.post("/logout", logout);
 router.get("/verify", verifyToken);
 router.get("/profile", authRequired, profile);
+router.put("/profile", authRequired, updateProfile);
 router.post("/google", googleLogin);
 
 export default router;

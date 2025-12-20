@@ -1,25 +1,36 @@
 import prisma from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken'; // Necesario solo para verifyToken
+import jwt from 'jsonwebtoken'; 
 import { OAuth2Client } from 'google-auth-library';
-import { createAccessToken } from '../lib/jwt.js'; // 👈 IMPORTANTE: Tu nueva función
+import { createAccessToken } from '../lib/jwt.js'; 
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const TOKEN_SECRET = process.env.JWT_SECRET || 'secret123';
+
+// Función auxiliar para limpiar el usuario antes de enviarlo (Quitar password)
+const returnUser = (user) => {
+    return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        dni: user.dni,           // <--- ESTO FALTABA
+        sex: user.sex,           // <--- ESTO FALTABA
+        birthDate: user.birthDate, // <--- ESTO FALTABA
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+    };
+};
 
 // 1. REGISTRO
 export const register = async (req, res) => {
   try {
     const { name, email, password, dni, sex, birthDate } = req.body;
 
-    // Verificar si ya existe
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json(["El usuario ya existe"]);
 
-    // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Guardar en DB
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -31,13 +42,12 @@ export const register = async (req, res) => {
       },
     });
 
-    // ✅ MEJORA: Usamos la función helper
     const token = await createAccessToken({ id: newUser.id });
 
     res.status(201).json({ 
       message: "Usuario creado exitosamente", 
       token, 
-      user: { id: newUser.id, name: newUser.name, email: newUser.email } 
+      user: returnUser(newUser) // Usamos la función auxiliar
     });
 
   } catch (error) {
@@ -50,21 +60,18 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Buscar usuario
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(400).json(["Credenciales inválidas"]);
 
-    // Comparar contraseñas
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json(["Credenciales inválidas"]);
 
-    // ✅ MEJORA: Usamos la función helper
     const token = await createAccessToken({ id: user.id });
 
     res.json({ 
       message: "Login exitoso", 
       token, 
-      user: { id: user.id, name: user.name, email: user.email } 
+      user: returnUser(user) // Usamos la función auxiliar
     });
 
   } catch (error) {
@@ -77,7 +84,7 @@ export const logout = (req, res) => {
     res.sendStatus(200);
 };
 
-// 4. PERFIL
+// 4. PERFIL (Lectura directa)
 export const profile = async (req, res) => {
     const userFound = await prisma.user.findUnique({
         where: { id: req.user.id }
@@ -85,17 +92,10 @@ export const profile = async (req, res) => {
 
     if (!userFound) return res.status(400).json({ message: "Usuario no encontrado" });
 
-    return res.json({
-        id: userFound.id,
-        name: userFound.name,
-        email: userFound.email,
-        dni: userFound.dni,
-        createdAt: userFound.createdAt,
-        updatedAt: userFound.updatedAt,
-    });
+    return res.json(returnUser(userFound));
 };
 
-// 5. VERIFICAR TOKEN
+// 5. VERIFICAR TOKEN (Aquí estaba el error principal) 🚨
 export const verifyToken = async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -110,11 +110,9 @@ export const verifyToken = async (req, res) => {
 
     if (!userFound) return res.status(401).json({ message: "No autorizado" });
 
-    return res.json({
-      id: userFound.id,
-      name: userFound.name,
-      email: userFound.email,
-    });
+    // ANTES: solo devolvías id, name, email. 
+    // AHORA: devolvemos todo (dni, sex, birthDate).
+    return res.json(returnUser(userFound)); 
   });
 };
 
@@ -123,45 +121,57 @@ export const googleLogin = async (req, res) => {
   const { token } = req.body;
 
   try {
-    // Verificar token con Google
     const ticket = await client.verifyIdToken({
         idToken: token,
         audience: process.env.GOOGLE_CLIENT_ID
     });
     const { name, email } = ticket.getPayload();
 
-    // Buscar o Crear usuario
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       user = await prisma.user.create({
         data: {
-          name: name, // Asegúrate de que tu modelo use 'name' o 'username'
+          name: name,
           email: email,
           password: "", 
-          // Si tienes username en tu schema y es unique, genera uno o usa el email
-          // username: email.split('@')[0] 
         }
       });
     }
 
-    // ✅ MEJORA: Usamos la función helper
     const accessToken = await createAccessToken({ id: user.id });
 
-    // NOTA: Si usas cookies, descomenta esto, si usas headers, manda el token en el json
-    // res.cookie("token", accessToken);
-
     res.json({
-      token: accessToken, // Devolvemos el token para que el front lo guarde
-      user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-      }
+      token: accessToken,
+      user: returnUser(user) // Devolvemos el usuario completo
     });
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error en autenticación con Google" });
+  }
+};
+
+// 7. ACTUALIZAR PERFIL
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, dni, sex, birthDate } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name,
+        dni,
+        // Prisma a veces necesita que null sea explícito si el campo es opcional
+        sex: sex || null, 
+        birthDate: birthDate ? new Date(birthDate) : null,
+      },
+    });
+
+    res.json(returnUser(updatedUser));
+
+  } catch (error) {
+    console.error(error); // Ver error en consola del backend si falla
+    res.status(500).json({ message: "Error al actualizar perfil" });
   }
 };

@@ -93,12 +93,26 @@ function HealthPage() {
             setValueDisease("diagnosedDate", "");
         }
         setShowDiseaseForm(true);
-        // Scroll suave hacia el formulario en móvil
         window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
     // 4. GUARDAR ENFERMEDAD
     const onSaveDisease = async (data) => {
+        // --- VALIDACIÓN DE FECHA FUTURA ---
+        if (data.diagnosedDate) {
+            const selectedDate = new Date(data.diagnosedDate);
+            const today = new Date();
+            
+            // Ajustamos horas a 00:00:00 para comparar solo la fecha (día)
+            selectedDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+
+            if (selectedDate > today) {
+                return toast.warning("⚠️ La fecha de diagnóstico no puede ser futura.");
+            }
+        }
+        // ----------------------------------
+
         try {
             if (editingDiseaseId) {
                 const res = await axios.put(`/health/diseases/${editingDiseaseId}`, data);
@@ -124,18 +138,43 @@ function HealthPage() {
         }
     };
 
-    // 5. ELIMINAR
-    const onDeleteDisease = async (id) => {
-        if (!window.confirm("¿Eliminar este registro?")) return;
+    // 5. ELIMINAR (Con Toast Customizado Sonner)
+    const handleDeleteConfirmation = (id) => {
+        toast.custom((t) => (
+            <div className="bg-zinc-800 border border-zinc-700 p-4 rounded-lg shadow-xl w-full max-w-sm">
+                <p className="font-medium text-white mb-3 text-center">¿Eliminar este registro médico?</p>
+                <div className="flex justify-center gap-3">
+                    <button
+                        onClick={() => toast.dismiss(t)}
+                        className="bg-zinc-600 hover:bg-zinc-500 text-white px-4 py-2 rounded text-sm transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={async () => {
+                            toast.dismiss(t);
+                            await confirmDelete(id);
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-bold transition-colors"
+                    >
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        ));
+    };
+
+    const confirmDelete = async (id) => {
         try {
             await axios.delete(`/health/diseases/${id}`);
             setHealthData(prev => ({
                 ...prev,
                 diseases: prev.diseases.filter(d => d.id !== id)
             }));
-            toast.success("Eliminado 🗑️");
+            toast.success("Registro eliminado 🗑️");
         } catch (error) {
-            toast.error("Error al eliminar");
+            console.error(error);
+            toast.error("Error al eliminar el registro");
         }
     };
 
@@ -231,7 +270,7 @@ function HealthPage() {
                                 </select>
                             </div>
 
-                            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 sm:py-2.5 rounded-lg transition-colors mt-2 text-sm sm:text-base shadow-lg shadow-indigo-500/20 active:scale-95">
+                            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 sm:py-2.5 rounded-lg transition-colors mt-2 text-sm sm:text-base">
                                 Actualizar Datos
                             </button>
                         </form>
@@ -262,7 +301,7 @@ function HealthPage() {
             </div>
 
             {/* SECCIÓN INFERIOR: HISTORIAL */}
-            <div id="diseaseFormSection"> {/* ID para scroll automático */}
+            <div id="diseaseFormSection"> 
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-200 mb-4 sm:mb-6 border-b border-zinc-700 pb-2">
                     Historial Médico 📋
                 </h2>
@@ -310,11 +349,11 @@ function HealthPage() {
                                 <button 
                                     type="button"
                                     onClick={handleCancelForm}
-                                    className="w-full sm:w-auto bg-zinc-600 hover:bg-zinc-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                                    className="w-full sm:w-auto bg-zinc-600 hover:bg-zinc-500 text-white px-4 py-2 rounded text-sm font-medium"
                                 >
                                     Cancelar
                                 </button>
-                                <button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-bold shadow-lg transition-transform active:scale-95">
+                                <button className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded text-sm font-bold shadow-lg">
                                     {editingDiseaseId ? "Actualizar" : "Guardar"}
                                 </button>
                             </div>
@@ -337,18 +376,20 @@ function HealthPage() {
                                     <button 
                                         onClick={() => handleEditDisease(disease)}
                                         className="text-zinc-300 hover:text-white p-2 bg-zinc-700/80 rounded-full hover:bg-indigo-600 transition-colors"
+                                        title="Editar"
                                     >
                                         ✏️
                                     </button>
                                     <button 
-                                        onClick={() => onDeleteDisease(disease.id)}
+                                        onClick={() => handleDeleteConfirmation(disease.id)}
                                         className="text-zinc-300 hover:text-white p-2 bg-zinc-700/80 rounded-full hover:bg-red-600 transition-colors"
+                                        title="Eliminar"
                                     >
                                         🗑️
                                     </button>
                                 </div>
                                 
-                                <div className="pr-16"> {/* Padding derecho para no chocar con botones en móvil */}
+                                <div className="pr-16">
                                     <h3 className="font-bold text-lg text-white mb-1 truncate" title={disease.name}>
                                         {disease.name}
                                     </h3>
