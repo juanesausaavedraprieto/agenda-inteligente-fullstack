@@ -34,7 +34,8 @@ const limiter = rateLimit({
 // 2. HELMET (Permite Popups de Google)
 app.use(
   helmet({
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    contentSecurityPolicy: false, // Desactiva CSP que a veces choca con scripts de Google
+    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Permite popups externos
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
