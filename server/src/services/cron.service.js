@@ -10,7 +10,13 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("🚨 ERROR DE CONEXIÓN GMAIL:", error);
+  } else {
+    console.log("✅ Servidor de Correo listo y conectado.");
+  }
+});
 // --- PLANTILLA BASE PARA CORREOS ---
 const getHtmlTemplate = (title, color, content) => {
   return `
@@ -36,7 +42,7 @@ export const startCronJobs = () => {
   console.log("🕰️ Servicio de Cron Jobs iniciado (Zona Horaria: Lima)...");
 
   // SE EJECUTA A LAS 8:00 AM (HORA PERÚ)
-  cron.schedule('0 8 * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     console.log("🔍 Ejecutando análisis diario del asistente...");
 
     // Calcular rango de "Mañana"
